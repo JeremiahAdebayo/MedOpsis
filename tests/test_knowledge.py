@@ -11,7 +11,7 @@ def knowledge_module():
     return importlib.import_module("ai_services.chat.knowledge")
 
 
-@pytest.mark.parametrize("change", [None, "pending", "duplicate", "http", "oversized", "invalid_date", "empty"])
+@pytest.mark.parametrize("change", [None, "pending", "duplicate", "http", "oversized", "invalid_date", "empty", "bad_port"])
 def test_reference_pack_validation(monkeypatch, tmp_path, change):
     knowledge = knowledge_module()
     data = json.loads((Path(__file__).parent / "fixtures/synthetic_knowledge.json").read_text())
@@ -21,6 +21,7 @@ def test_reference_pack_validation(monkeypatch, tmp_path, change):
     if change == "oversized": data["sources"][0]["text"] = "a" * 3900; data["sources"] += [{**data["sources"][0], "id": "synthetic-2"}]
     if change == "invalid_date": data["reviewed_at"] = "yesterday"
     if change == "empty": data["sources"] = []
+    if change == "bad_port": data["sources"][0]["url"] = "https://example.invalid:not-a-port"
     path = tmp_path / "synthetic.json"
     path.write_text(json.dumps(data))
     monkeypatch.setattr(knowledge, "SOURCE_PATH", path)

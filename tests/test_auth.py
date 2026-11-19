@@ -38,3 +38,14 @@ def test_auth_configuration_fails_closed(monkeypatch, auth_setup):
     with pytest.raises(HTTPException) as exc:
         auth.authorize_token(auth_setup.token())
     assert exc.value.status_code == 503
+
+
+def test_invalid_jwks_port_never_reaches_key_retrieval(monkeypatch, auth_setup):
+    auth = auth_module()
+    monkeypatch.setenv("MEDOPSIS_AUTH_JWKS_URL", "https://synthetic-issuer.example.invalid:not-a-port/jwks")
+    def forbidden(url):
+        raise AssertionError("Invalid authentication URL reached key retrieval")
+    monkeypatch.setattr(auth, "jwks_client", forbidden)
+    with pytest.raises(HTTPException) as exc:
+        auth.authorize_token(auth_setup.token())
+    assert exc.value.status_code == 503

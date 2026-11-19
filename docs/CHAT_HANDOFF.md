@@ -2,7 +2,7 @@
 
 ## 1. Start here: scope and approval state
 
-**Current status: architecture approved; written specification review pending; implementation not started.**
+**Current status: design/specification/plan approved; backend implemented with local tests; live-model, live-app-auth, clinical/native-language and patient-release checks remain outstanding.**
 
 Architecture approval was recorded at `2026-11-19T11:54:28Z`. The current specification is [MedOpsis text-chat v1 design](superpowers/specs/2026-11-19-medopsis-chat-design.md), on the local branch `feat/text-chat`.
 

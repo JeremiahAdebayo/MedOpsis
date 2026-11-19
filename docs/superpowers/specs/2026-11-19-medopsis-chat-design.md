@@ -1,8 +1,8 @@
 # MedOpsis text-chat v1 design
 
 Architecture approval recorded: 2026-11-19T11:54:28Z.
-Written specification review: pending.
-Implementation: not started. No deployment, paid access, or real-patient-data tests are authorized by this document.
+Written specification review: approved by the user.
+Implementation: backend code is present and locally tested with synthetic/mocked dependencies. Live provider and app-issuer integration are not verified. No deployment, paid access, or real-patient-data tests are authorized by this document.
 
 ## 1. Goal and delivery boundary
 

@@ -32,3 +32,27 @@ def auth_setup(monkeypatch, signing_key):
         claims.update(changes)
         return jwt.encode(claims, signing_key, algorithm="RS256", headers={"kid": "synthetic-key", "jku": "https://attacker.example.invalid/ignored"})
     return SimpleNamespace(token=token, public_key=signing_key.public_key(), issuer=issuer, audience=audience)
+
+
+@pytest.fixture
+def chat_client(monkeypatch, auth_setup, tmp_path):
+    from pathlib import Path
+    from fastapi.testclient import TestClient
+    from ai_services.chat import auth, knowledge, provider
+    from backend.app.main import app
+    class ControlledKeys:
+        def get_signing_key_from_jwt(self, token):
+            return SimpleNamespace(key=auth_setup.public_key)
+    monkeypatch.setattr(auth, "jwks_client", lambda url: ControlledKeys())
+    path = tmp_path / "synthetic-knowledge.json"
+    path.write_bytes((Path(__file__).parent / "fixtures/synthetic_knowledge.json").read_bytes())
+    monkeypatch.setattr(knowledge, "SOURCE_PATH", path)
+    class ControlledSession:
+        trust_env = True
+        def __enter__(self): return self
+        def __exit__(self, *args): pass
+        def post(self, url, **kwargs):
+            content = json.dumps({"answer": "Synthetic integration response, not clinical advice", "reference_ids": ["synthetic-1"]})
+            return SimpleNamespace(status_code=200, headers={}, json=lambda: {"choices": [{"finish_reason": "stop", "message": {"content": content}}]})
+    monkeypatch.setattr(provider.requests, "Session", ControlledSession)
+    return TestClient(app), {"Authorization": "Bearer " + auth_setup.token()}

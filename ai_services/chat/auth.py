@@ -18,6 +18,8 @@ def authorize_token(token: str) -> str:
     url = os.environ.get("MEDOPSIS_AUTH_JWKS_URL", "")
     try:
         parsed = urlsplit(url)
+        # Reject malformed port values before any signing-key request.
+        _ = parsed.port
         valid_url = parsed.scheme == "https" and parsed.hostname and not parsed.username and not parsed.password
     except ValueError:
         valid_url = False

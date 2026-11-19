@@ -22,6 +22,8 @@ class Source(BaseModel):
     @classmethod
     def validate_url(cls, value):
         parsed = urlsplit(value)
+        # urlsplit checks port syntax/range only when this property is read.
+        _ = parsed.port
         if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password:
             raise ValueError("Source URLs must use HTTPS without credentials")
         return value
