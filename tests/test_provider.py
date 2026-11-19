@@ -19,7 +19,7 @@ def synthetic_pack():
     return KnowledgePack.model_validate_json((Path(__file__).parent / "fixtures/synthetic_knowledge.json").read_bytes())
 
 
-def transport(monkeypatch, provider, status=200, content=None, finish="stop", failure=None):
+def transport(monkeypatch, provider, status=200, content=None, finish="stop", failure=None, retry_after="10"):
     captured = {}
     content = content or json.dumps({"answer": "Synthetic software response", "reference_ids": ["synthetic-1"]})
     class ControlledSession:
@@ -28,7 +28,7 @@ def transport(monkeypatch, provider, status=200, content=None, finish="stop", fa
         def post(self, url, **kwargs):
             captured.update(url=url, trust_env=self.trust_env, **kwargs)
             if failure: raise failure
-            return SimpleNamespace(status_code=status, headers={"Retry-After": "10"}, json=lambda: {"choices": [{"finish_reason": finish, "message": {"content": content}}]})
+            return SimpleNamespace(status_code=status, headers={"Retry-After": retry_after}, json=lambda: {"choices": [{"finish_reason": finish, "message": {"content": content}}]})
     monkeypatch.setattr(provider.requests, "Session", ControlledSession)
     return captured
 
@@ -84,3 +84,34 @@ def test_provider_timeout_is_not_a_medical_answer(monkeypatch):
     with pytest.raises(HTTPException) as exc:
         provider.generate_reply(ChatRequest(language="en",messages=[{"role":"user","content":"Synthetic"}]),synthetic_pack())
     assert exc.value.status_code==504
+
+
+def test_truncated_provider_output_is_rejected(monkeypatch):
+    provider = provider_module()
+    transport(monkeypatch, provider, finish="length")
+    with pytest.raises(HTTPException) as exc:
+        provider.generate_reply(ChatRequest(language="en", messages=[{"role": "user", "content": "Synthetic"}]), synthetic_pack())
+    assert exc.value.status_code == 502
+    assert exc.value.detail["code"] == "provider_invalid_output"
+
+
+def test_provider_connection_failure_is_unavailable(monkeypatch):
+    provider = provider_module()
+    transport(monkeypatch, provider, failure=requests.ConnectionError())
+    with pytest.raises(HTTPException) as exc:
+        provider.generate_reply(ChatRequest(language="en", messages=[{"role": "user", "content": "Synthetic"}]), synthetic_pack())
+    assert exc.value.status_code == 502
+    assert exc.value.detail["code"] == "provider_unavailable"
+
+
+@pytest.mark.parametrize("retry_after,forwarded", [("abc", False), ("1" * 13, False), ("4000", False), ("10", True)])
+def test_rate_limit_retry_after_is_sanitized(monkeypatch, retry_after, forwarded):
+    provider = provider_module()
+    transport(monkeypatch, provider, status=429, retry_after=retry_after)
+    with pytest.raises(HTTPException) as exc:
+        provider.generate_reply(ChatRequest(language="en", messages=[{"role": "user", "content": "Synthetic"}]), synthetic_pack())
+    assert exc.value.status_code == 429
+    if forwarded:
+        assert exc.value.headers["Retry-After"] == retry_after
+    else:
+        assert exc.value.headers is None or "Retry-After" not in exc.value.headers

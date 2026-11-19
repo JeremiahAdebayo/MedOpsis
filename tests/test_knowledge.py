@@ -42,3 +42,13 @@ def test_missing_pack_fails_closed(monkeypatch, tmp_path):
     with pytest.raises(HTTPException) as exc:
         knowledge.load_knowledge()
     assert exc.value.status_code == 503
+
+
+def test_oversized_pack_file_fails_closed(monkeypatch, tmp_path):
+    knowledge = knowledge_module()
+    path = tmp_path / "oversized.json"
+    path.write_bytes(b" " * 32769)
+    monkeypatch.setattr(knowledge, "SOURCE_PATH", path)
+    with pytest.raises(HTTPException) as exc:
+        knowledge.load_knowledge()
+    assert exc.value.status_code == 503

@@ -52,3 +52,34 @@ def test_openapi_documents_chat_input_and_bearer_auth(chat_client):
     operation=client.get("/openapi.json").json()["paths"]["/chat"]["post"]
     assert "requestBody" in operation
     assert operation["security"]
+
+
+def test_chat_forwards_full_history_and_is_stateless(chat_client, monkeypatch):
+    import json
+    from types import SimpleNamespace
+    from ai_services.chat import provider
+    client, headers = chat_client
+    captured = []
+    class CapturingSession:
+        trust_env = True
+        def __enter__(self): return self
+        def __exit__(self, *args): pass
+        def post(self, url, **kwargs):
+            captured.append(kwargs["json"])
+            content = json.dumps({"answer": "Synthetic integration response, not clinical advice", "reference_ids": ["synthetic-1"]})
+            return SimpleNamespace(status_code=200, headers={}, json=lambda: {"choices": [{"finish_reason": "stop", "message": {"content": content}}]})
+    monkeypatch.setattr(provider.requests, "Session", CapturingSession)
+    history = [
+        {"role": "user", "content": "Synthetic first question"},
+        {"role": "assistant", "content": "Synthetic first answer"},
+        {"role": "user", "content": "Synthetic follow-up question"},
+    ]
+    response = client.post("/chat", headers=headers, json={"language": "en", "messages": history})
+    assert response.status_code == 200
+    assert captured[0]["messages"][0]["role"] == "system"
+    assert captured[0]["messages"][1:] == history
+    fresh = [{"role": "user", "content": "Synthetic independent question"}]
+    response = client.post("/chat", headers=headers, json={"language": "en", "messages": fresh})
+    assert response.status_code == 200
+    assert captured[1]["messages"][1:] == fresh
+    assert len(captured[1]["messages"]) == 2
