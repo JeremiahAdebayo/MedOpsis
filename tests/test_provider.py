@@ -44,11 +44,13 @@ def test_generation_preserves_context_and_resolves_references(monkeypatch, langu
     assert captured["url"] == "https://api.groq.com/openai/v1/chat/completions"
     assert captured["trust_env"] is False and captured["allow_redirects"] is False and captured["verify"] is True
     payload = captured["json"]
-    assert payload["model"] == "openai/gpt-oss-120b" and payload["stream"] is False
+    assert payload["model"] == "qwen/qwen3.8-27b" and payload["stream"] is False
+    assert payload["reasoning_effort"] == "none"
     assert payload["max_completion_tokens"] == 600
-    assert payload["response_format"]["json_schema"]["strict"] is True
+    assert payload["response_format"] == {"type": "json_object"}
     assert name in payload["messages"][0]["content"]
     assert "not a licensed doctor" in payload["messages"][0]["content"]
+    assert "Translate only the answer value" in payload["messages"][0]["content"]
     data = json.loads(payload["messages"][-1]["content"])
     assert data["message"] == request.messages[-1].content
     assert data["screening_report"] == request.screening_report

@@ -2,11 +2,13 @@
 
 ## 1. Start here: scope and approval state
 
-**Current status: design/specification/plan approved; backend implemented with local tests; live-model, live-app-auth, clinical/native-language and patient-release checks remain outstanding.**
+**Current status: backend implemented; 51 automated tests passed, and four synthetic live qwen/qwen3.8-27b requests returned app/provider HTTP 200. Live app-auth, clinical/native-language and patient-release checks remain outstanding.**
+
+See [Qwen smoke-test evidence](QWEN_SMOKE_TEST.md): the actual POST /chat route used real synthetic JWT signatures, controlled signing-key retrieval and synthetic references, NOT clinical approval. Free-tier status was user-confirmed, not independently audited.
 
 Architecture approval was recorded at `2026-11-19T11:54:28Z`. The current specification is [MedOpsis text-chat v1 design](superpowers/specs/2026-11-19-medopsis-chat-design.md), on the local branch `feat/text-chat`.
 
-The remaining sections preserve the earlier discovery/proposal snapshot. Statements below describing the design as unapproved are historical; the linked specification is the current authority. Patient-use requirements remain unsatisfied. No deployment or paid access has been authorized.
+The remaining sections preserve the earlier discovery/proposal snapshot. Statements below about approval, implementation, model choice, credentials and execution are historical; the linked specification and smoke-test evidence describe the current state. Patient-use requirements remain unsatisfied. No deployment or paid access has been authorized.
 
 This document transfers the conversation and research to another agent. It is not an approved implementation specification, authorization to deploy, or a clinical/compliance certification. The user's request to produce this handoff authorizes documentation, not implementation.
 

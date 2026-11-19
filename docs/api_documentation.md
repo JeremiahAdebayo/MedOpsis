@@ -18,7 +18,7 @@ The report is untrusted preliminary screening information; the chatbot does not 
 
 ## Success
 
-200 JSON with answer and references. Each reference contains only id, title, and url, resolved by the backend from its approved local reference pack. No clinical reference URL is fetched during the request. Provider output uses strict JSON with answer/reference_ids and is validated before publication; unknown IDs or malformed/truncated output are rejected.
+200 JSON with answer and references. Each reference contains only id, title, and url, resolved by the backend from its approved local reference pack. No clinical reference URL is fetched during the request. Provider output uses JSON object mode with explicit answer/reference_ids instructions and is strictly validated locally before publication; unknown IDs or malformed/truncated output are rejected.
 
 Input language propagation and the response contract are mechanically tested. Medical and native-language accuracy remain unverified; a valid response schema is not clinical validation.
 
@@ -37,10 +37,10 @@ Errors use `{"detail": {"code": "stable_code", "message": "safe explanation"}}`.
 | 503 | auth_not_configured, auth_unavailable, knowledge_unavailable, provider_not_configured, provider_access_unavailable |
 | 504 | provider_timeout |
 
-There are no automatic retries, provider/key rotation, paid fallbacks, tool calls, streaming responses, or voice integration. Groq calls use the fixed initial model openai/gpt-oss-120b, a 600-token completion ceiling, low reasoning effort, a 20-second timeout, verified TLS, and no redirects/environment proxies. These bounds are not a promise of free-account quota or answer quality.
+There are no automatic retries, provider/key rotation, paid fallbacks, tool calls, streaming responses, or voice integration. Groq calls use the fixed initial model qwen/qwen3.8-27b, a 600-token completion ceiling, reasoning disabled, a 20-second timeout, verified TLS, and no redirects/environment proxies. These bounds are not a promise of free-account quota or answer quality.
 
 OpenAPI is available at /openapi.json and the normal FastAPI documentation UI at /docs. The request-body schema and bearer-security requirement are verified. These endpoints do not supply medical or identity data.
 
 ## Release boundary
 
-Default configuration and missing approved clinical content fail closed. The endpoint was tested with synthetic data and mocked upstream services, plus real loopback error-path requests. No live Groq response or live app identity provider was tested. Patient use requires real clinical/source approval, native-language evaluation, actual auth/consent/storage integration, authorized HTTPS deployment, provider-account controls and qualified privacy/legal review.
+Default configuration and missing approved clinical content fail closed. The endpoint was tested with synthetic data and mocked upstream services, plus real loopback error-path requests. Live Groq synthetic requests returned HTTP 200 for en, yo, ig and ha. Signing-key retrieval and reference content were synthetic/controlled; the real app issuer, clinical content and language fluency remain unverified. Patient use requires real clinical/source approval, native-language evaluation, actual auth/consent/storage integration, authorized HTTPS deployment, provider-account controls and qualified privacy/legal review.

@@ -8,7 +8,7 @@ from pydantic import AfterValidator, BaseModel, ConfigDict, Field, StrictStr, Va
 from .models import ChatRequest, nonblank
 from .knowledge import KnowledgePack
 
-MODEL = "openai/gpt-oss-120b"
+MODEL = "qwen/qwen3.8-27b"
 URL = "https://api.groq.com/openai/v1/chat/completions"
 LANGUAGES = {"en": "English", "yo": "Yoruba", "ig": "Igbo", "ha": "Hausa"}
 RULES = """You are the MedOpsis AI health assistant, not a licensed doctor.
@@ -19,8 +19,7 @@ alter units, convert classifier confidence to disease probability, prescribe med
 changes, or invent medical claims or emergency contacts. Ask for clarification or clinician follow-up when
 appropriate. Follow urgent-presentation guidance only if supported by supplied references.
 Return answer text in the requested language and only reference IDs actually present in the context.
-Do not include URLs or claim to have examined the patient. Return only the required JSON object."""
-SCHEMA = {"type": "object", "properties": {"answer": {"type": "string"}, "reference_ids": {"type": "array", "items": {"type": "string"}}}, "required": ["answer", "reference_ids"], "additionalProperties": False}
+Do not include URLs or claim to have examined the patient. Output exactly two JSON fields: answer (string) and reference_ids (array of source IDs). Keep these field names and source IDs unchanged in English. Translate only the answer value. No markdown, code fences, ellipsis or trailing text."""
 
 
 class ModelReply(BaseModel):
@@ -37,7 +36,8 @@ def generate_reply(request: ChatRequest, pack: KnowledgePack) -> dict:
     messages += [message.model_dump() for message in request.messages]
     if request.screening_report is not None:
         messages[-1] = {"role": "user", "content": json.dumps({"message": request.messages[-1].content, "screening_report": request.screening_report}, ensure_ascii=False)}
-    payload = {"model": MODEL, "messages": messages, "stream": False, "max_completion_tokens": 600, "reasoning_effort": "low", "response_format": {"type": "json_schema", "json_schema": {"name": "medopsis_reply", "strict": True, "schema": SCHEMA}}}
+    # shortcut: Qwen schema decoding is unreliable; use JSON mode plus strict local validation until fixed.
+    payload = {"model": MODEL, "messages": messages, "stream": False, "max_completion_tokens": 600, "reasoning_effort": "none", "response_format": {"type": "json_object"}}
     try:
         with requests.Session() as session:
             session.trust_env = False

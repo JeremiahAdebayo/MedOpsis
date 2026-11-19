@@ -2,13 +2,13 @@
 
 Architecture approval recorded: 2026-11-19T11:54:28Z.
 Written specification review: approved by the user.
-Implementation: backend code is present and locally tested with synthetic/mocked dependencies. Live provider and app-issuer integration are not verified. No deployment, paid access, or real-patient-data tests are authorized by this document.
+Implementation: backend code is present and locally tested with synthetic/mocked dependencies. Four live Groq Qwen synthetic POST /chat requests returned app/provider HTTP 200; signing-key retrieval and reference content were synthetic/controlled, not real app-issuer integration or clinical approval. See [Qwen smoke-test evidence](../../QWEN_SMOKE_TEST.md). No deployment, paid access, or real-patient-data tests are authorized by this document.
 
 ## 1. Goal and delivery boundary
 
 Build the text-chat backend for a ChatGPT-style, health-focused conversation: health education and explanations of screening reports produced by a separate image-recognition model.
 
-Use Python/FastAPI for a small stateless API and Groq for online generation, initially evaluating `openai/gpt-oss-120b` within a verified free account allowance. Support English, Yoruba, Igbo, and Hausa.
+Use Python/FastAPI for a small stateless API and Groq for online generation, initially evaluating `qwen/qwen3.8-27b` on the user-confirmed Free tier; billing/account controls were not independently audited. Support English, Yoruba, Igbo, and Hausa.
 
 The first deliverable is a local, integration-ready backend exercised with synthetic test data. Patient-facing release is a separate readiness decision requiring the clinical, language, authentication, consent, storage, and provider-control conditions below.
 
@@ -89,7 +89,7 @@ The clinician selects initial topic coverage and screening-explanation rules bef
 
 ## 6. Generation contract
 
-Use one Groq client and the fixed initial model candidate `openai/gpt-oss-120b`; no multi-provider framework. Use the supported strict JSON response format with streaming disabled. Set an initial output ceiling of 600 completion tokens and a finite 20-second provider timeout. Verify actual account entitlement, quota, and supported transport parameters before a live test; revise these application constants only on execution evidence, not advertised maximum context length.
+Use one Groq client and the fixed initial model candidate `qwen/qwen3.8-27b`; no multi-provider framework. Use JSON object mode with streaming disabled and strict local shape/reference validation. Live Qwen schema decoding failed, so server-side constrained decoding is not relied upon. Set an initial output ceiling of 600 completion tokens and a finite 20-second provider timeout. Verify actual account entitlement, quota, and supported transport parameters before a live test; revise these application constants only on execution evidence, not advertised maximum context length.
 
 Keep `GROQ_API_KEY` server-side. The other required environment inputs are `MEDOPSIS_AUTH_ISSUER`, `MEDOPSIS_AUTH_AUDIENCE`, and `MEDOPSIS_AUTH_JWKS_URL`. No credentials are written into Git, prompts, client storage, or logs. Provider account controls and billing are not changed automatically.
 
